@@ -49,7 +49,7 @@ def main():
         server.init()
         server.run()
     except Exception as e:
-        logger.critical("Encountered fatal error: {e}", exc_info=True)
+        logger.critical(f"Encountered fatal error: {e}", exc_info=True)
 
 if __name__ == '__main__':
     main()
