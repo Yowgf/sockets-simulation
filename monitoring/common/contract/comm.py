@@ -1,3 +1,4 @@
+from .limits import MAX_MSG_SIZE
 from .request import (AddRequest,
                       RemoveRequest,
                       ListRequest,
@@ -17,7 +18,7 @@ def decode_msg(msg_bytes):
     msg = msg_bytes.decode('ascii')
     if len(msg) == 0 or msg[-1] != "\n":
         raise InvalidMessage(msg)
-    return msg
+    return msg[:-1]
 
 def encode_request(msg_str):
     return encode_msg(msg_str)

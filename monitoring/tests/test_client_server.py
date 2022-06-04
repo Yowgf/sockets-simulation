@@ -1,40 +1,25 @@
-from multiprocessing import Process
-import pytest
+import threading
+import time
 
-from ..client.client.client import Client
-from ..server.server.server import Server
-
-from .mocks import ClientConfig, ServerConfig
+from ..common.contract.comm import decode_msg
 
 class TestClientServer:
-    PORT = 51555
-
-    @pytest.fixture
-    def client(self):
-        client_config = ClientConfig('localhost', self.PORT)
-        client = Client(client_config)
-        client.init()
-        return client
-
-    @pytest.fixture
-    def server(self):
-        server_config = ServerConfig('iv4', self.PORT)
-        server = Server(server_config)
-        server.init()
-        return server
-
-    def stop_server(client):
+    def stop_server(self, client):
         client.kill_server()
 
     def check_resp(self, resp, expected):
-        assert resp.decode('ascii') == expected
+        assert decode_msg(resp) == expected
+
+    def wait_server_wakeup(self):
+        time.sleep(0.5)
 
     def test_add_sensor(self, client, server):
-        server_runner = Process(target=server.run)
+        server_runner = threading.Thread(target=server.run)
         server_runner.start()
+        self.wait_server_wakeup()
 
         resp = client.add_sensor(1, 1)
-        self.check_resp(resp, f"sensor {sensor_id} added")
+        self.check_resp(resp, f"sensor 1 added")
 
-        stop_server()
+        self.stop_server(client)
         server_runner.join()

@@ -1,7 +1,7 @@
 import socket
 
 from ...common.log import log
-from ...common.contract.limits import MAX_MSG_SIZE, MAX_NUM_SENSORS
+from ...common.contract.limits import MAX_NUM_SENSORS
 from ...common.contract.comm import send_str, recv_request
 from ...common.contract.request import (AddRequest,
                                         RemoveRequest,
@@ -15,10 +15,6 @@ logger = log.logger()
 #
 # - add invalid sensor (only allow 1-4)
 # - add invalid equipment (only allow 1-4)
-# - add kill request
-# - add remove functionality
-# - add list functionality
-# - add read functionality
 #
 # General TODOs:
 #
@@ -42,7 +38,7 @@ class Server:
 
     def init(self):
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        pass
+        self._sock.setblocking(True)
 
     def run(self):
         self._sock.bind(("", self._port))
@@ -53,11 +49,11 @@ class Server:
                 client_socket, client_addr = self._sock.accept()
 
                 logger.info(f"Received connection from address {client_addr}")
-                
-                req = recv_request(self._sock)
-                resp = self._process_request(request)
-                
-                send_str(resp)
+
+                req = recv_request(client_socket)
+                resp = self._process_request(req)
+
+                send_str(client_socket, resp)
 
         except TerminateServer as terminate_exc:
             logger.info(str(terminate_exc))
