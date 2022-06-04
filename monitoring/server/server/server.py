@@ -2,7 +2,9 @@ from copy import copy
 import socket
 
 from ...common.log import log
-from ...common.contract.errors import InvalidMessage
+from ...common.contract.errors import (InvalidMessageError,
+                                       InvalidSensorError,
+                                       InvalidEquipmentError)
 from ...common.contract.limits import MAX_NUM_SENSORS
 from ...common.contract.comm import send_str, recv_request
 from ...common.contract.request import (AddRequest,
@@ -19,10 +21,7 @@ logger = log.logger()
 # - add invalid sensor (only allow 1-4)
 # - add invalid equipment (only allow 1-4)
 #
-# General TODOs:
-#
-# - Implement the parse function of each type of request
-# - Reject request if malformed
+# - Allow IPv4 and IPv6
 ################################################################################
 
 class TerminateServer(Exception):
@@ -56,8 +55,14 @@ class Server:
                     req = recv_request(client_socket)
                     resp = self._process_request(req)
                     send_str(client_socket, resp)
-                except InvalidMessage as e:
-                    log.info(f"Received invalid message from client: {e}")
+                except InvalidMessageError as e:
+                    logger.info(f"Received invalid message error: {e}")
+                except InvalidSensorError as e:
+                    logger.info(f"Received invalid sensor error: {e}")
+                    send_str(client_socket, "invalid sensor")
+                except InvalidEquipmentError as e:
+                    logger.info(f"Received invalid equipment error: {e}")
+                    send_str(client_socket, "invalid equipment")
 
         except TerminateServer as terminate_exc:
             logger.info(str(terminate_exc))
@@ -76,7 +81,7 @@ class Server:
         elif isinstance(req, KillRequest):
             raise TerminateServer("Received kill request")
         else:
-            raise InvalidMessage(f"Invalid request type {type(req)} for request {req}")
+            raise InvalidMessageError(f"Invalid request type {type(req)} for request {req}")
 
     def _add_sensors(self, req):
         sensor_ids = req.sensor_ids

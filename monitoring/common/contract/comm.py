@@ -4,7 +4,7 @@ from .request import (AddRequest,
                       ListRequest,
                       ReadRequest,
                       KillRequest)
-from .errors import InvalidMessage
+from .errors import InvalidMessageError
 
 def encode_msg(msg_str):
     if len(msg_str) == 0:
@@ -17,7 +17,7 @@ def encode_msg(msg_str):
 def decode_msg(msg_bytes):
     msg = msg_bytes.decode('ascii')
     if len(msg) == 0 or msg[-1] != "\n":
-        raise InvalidMessage(msg)
+        raise InvalidMessageError(msg)
     return msg[:-1]
 
 def encode_request(msg_str):
@@ -36,7 +36,7 @@ def decode_request(msg_bytes):
     elif msg.startswith('kill'):
         return KillRequest.parse(msg)
     else:
-        raise InvalidMessage(msg)
+        raise InvalidMessageError(msg)
 
 def send_str(sock, msg_str):
     encoded_msg = encode_msg(msg_str)

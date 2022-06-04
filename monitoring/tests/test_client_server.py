@@ -186,3 +186,25 @@ class TestClientServer:
 
         self.stop_server(client)
         server_runner.join()
+
+    def test_invalid_equipment_error(self, client, server):
+        server_runner = threading.Thread(target=server.run)
+        server_runner.start()
+        self.wait_server_wakeup()
+
+        resp = client._send_recv(f"add sensor {SENSOR_IDS[0]} in 1234567890")
+        self.check_resp(resp, "invalid equipment")
+
+        self.stop_server(client)
+        server_runner.join()
+
+    def test_invalid_sensor_error(self, client, server):
+        server_runner = threading.Thread(target=server.run)
+        server_runner.start()
+        self.wait_server_wakeup()
+
+        resp = client._send_recv(f"add sensor 1234567890 in EQUIPMENT_IDS[0]")
+        self.check_resp(resp, "invalid sensor")
+
+        self.stop_server(client)
+        server_runner.join()
