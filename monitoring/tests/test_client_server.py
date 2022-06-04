@@ -11,7 +11,7 @@ class TestClientServer:
         assert decode_msg(resp) == expected
 
     def wait_server_wakeup(self):
-        time.sleep(0.5)
+        time.sleep(0.1)
 
     def test_add_sensor(self, client, server):
         server_runner = threading.Thread(target=server.run)

@@ -13,10 +13,6 @@ class Client:
 
         self._sock = None
 
-    def __del__(self):
-        if self._sock != None:
-            self._sock.close()
-
     def init(self):
         pass
 
@@ -29,16 +25,10 @@ class Client:
         msg = self.add_sensor(1, 1); assert msg == b'sensor 1 already exists in 1'
 
     def add_sensor(self, sensor_id, equipment_id):
-        self._connect()
-        send_str(self._sock, f"add sensor {sensor_id} in {equipment_id}")
-        resp = self._sock.recv(MAX_MSG_SIZE)
-        self._close()
-        return resp
+        return self._send_recv(f"add sensor {sensor_id} in {equipment_id}")
 
     def kill_server(self):
-        self._connect()
-        send_str(self._sock, "kill")
-        self._close()
+        self._send("kill")
 
     def _connect(self):
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -48,3 +38,15 @@ class Client:
 
     def _close(self):
         self._sock.close()
+
+    def _send(self, msg):
+        self._connect()
+        send_str(self._sock, msg)
+        self._close()
+
+    def _send_recv(self, msg):
+        self._connect()
+        send_str(self._sock, msg)
+        resp = self._sock.recv(MAX_MSG_SIZE)
+        self._close()
+        return resp
