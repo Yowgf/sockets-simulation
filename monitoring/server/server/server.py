@@ -68,7 +68,7 @@ class Server:
         elif isinstance(req, ListRequest):
             return self._list_sensors(req)
         elif isinstance(req, ReadRequest):
-            return self._read_sensor(req)
+            return self._read_sensors(req)
         elif isinstance(req, KillRequest):
             raise TerminateServer("Received kill request")
         else:
@@ -111,12 +111,12 @@ class Server:
                 resp += f" {sensor_id}"
             return resp
 
-    def _read_sensor(self, req):
+    def _read_sensors(self, req):
         sensors_list = req.sensors_list
         equipment_id = req.equipment_id
         success_msg = ""
         failure_msg = ""
-        for sensor_id in sensors_list:
+        for sensor_id in sorted(sensors_list):
             if (equipment_id not in self._sensors or 
                 sensor_id not in self._sensors[equipment_id]
             ):
@@ -126,8 +126,8 @@ class Server:
         if failure_msg != "":
             return "sensor(s)" + failure_msg + " not installed"
         else:
-            # Remove last space
-            return success_msg[:-1]
+            # Remove trailing space
+            return success_msg.rstrip()
 
     def _get_num_sensors(self):
         num_sensors = 0

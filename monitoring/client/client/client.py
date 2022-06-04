@@ -27,6 +27,21 @@ class Client:
     def add_sensor(self, sensor_id, equipment_id):
         return self._send_recv(f"add sensor {sensor_id} in {equipment_id}")
 
+    def remove_sensor(self, sensor_id, equipment_id):
+        return self._send_recv(f"remove sensor {sensor_id} in {equipment_id}")
+
+    def list_sensors(self, equipment_id):
+        return self._send_recv(f"list sensors in {equipment_id}")
+
+    def read_sensors(self, sensors_list, equipment_id):
+        sensors_list_str = ""
+        for sensor_id in sensors_list:
+            sensors_list_str += f"{sensor_id} "
+        if sensors_list_str != "":
+            # Remove trailing space
+            sensors_list_str = sensors_list_str.rstrip()
+        return self._send_recv(f"read {sensors_list_str} in {equipment_id}")
+
     def kill_server(self):
         self._send("kill")
 
