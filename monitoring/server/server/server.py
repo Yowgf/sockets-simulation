@@ -1,6 +1,7 @@
 import socket
 
 from ...common.log import log
+from ...common.contract.errors import InvalidMessage
 from ...common.contract.limits import MAX_NUM_SENSORS
 from ...common.contract.comm import send_str, recv_request
 from ...common.contract.request import (AddRequest,
@@ -47,13 +48,14 @@ class Server:
         try:
             while True:
                 client_socket, client_addr = self._sock.accept()
-
                 logger.info(f"Received connection from address {client_addr}")
 
-                req = recv_request(client_socket)
-                resp = self._process_request(req)
-
-                send_str(client_socket, resp)
+                try:
+                    req = recv_request(client_socket)
+                    resp = self._process_request(req)
+                    send_str(client_socket, resp)
+                except InvalidMessage as e:
+                    log.info(f"Received invalid message from client: {e}")
 
         except TerminateServer as terminate_exc:
             logger.info(str(terminate_exc))
@@ -72,7 +74,7 @@ class Server:
         elif isinstance(req, KillRequest):
             raise TerminateServer("Received kill request")
         else:
-            raise ValueError(f"Invalid request type {type(req)} for request {req}")
+            raise InvalidMessage(f"Invalid request type {type(req)} for request {req}")
 
     def _add_sensor(self, req):
         sensor_id = req.sensor_id

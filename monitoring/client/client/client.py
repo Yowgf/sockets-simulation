@@ -17,12 +17,6 @@ class Client:
         pass
 
     def run(self):
-        logger.info("Starting client on {self._host}:{self._port}")
-
-        # Casos para operacao 'instalar sensor'
-        msg = self.add_sensor(1, 1); assert msg == b'sensor 1 added'
-        # Se sensor ja estiver sido adicionado, espere uma resposta diferente
-        msg = self.add_sensor(1, 1); assert msg == b'sensor 1 already exists in 1'
 
     def add_sensor(self, sensor_id, equipment_id):
         return self._send_recv(f"add sensor {sensor_id} in {equipment_id}")
@@ -46,12 +40,13 @@ class Client:
         self._send("kill")
 
     def _connect(self):
+        logger.info("Connecting client to {self._host}:{self._port}")
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._sock.setblocking(True)
-        # TODO: Make sure was successfully estabilished
         self._sock.connect((self._host, self._port))
 
     def _close(self):
+        logger.info("Closing connection to {self._host}:{self._port}")
         self._sock.close()
 
     def _send(self, msg):
