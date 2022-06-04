@@ -1,10 +1,34 @@
 import socket
 
 from ...common.log import log
-from ...common.contract.limits import MAX_MSG_SIZE
-from .request import AddRequest, RemoveRequest, ListRequest, ReadRequest
+from ...common.contract.limits import MAX_MSG_SIZE, MAX_NUM_SENSORS
+from ...common.contract.comm import send_str, recv_request
+from ...common.contract.request import (AddRequest,
+                                        RemoveRequest,
+                                        ListRequest,
+                                        ReadRequest,
+                                        KillRequest)
 
 logger = log.logger()
+
+# TODO cases:
+#
+# - add invalid sensor (only allow 1-4)
+# - add invalid equipment (only allow 1-4)
+# - add kill request
+# - add remove functionality
+# - add list functionality
+# - add read functionality
+#
+# General TODOs:
+#
+# - Implement the parse function of each type of request
+# - Reject request if malformed
+################################################################################
+
+class TerminateServer(Exception):
+    def __init__(self, reason):
+        super().__init__("Terminating server due to reason: " + reason)
 
 class Server:
     def __init__(self, config):
@@ -13,7 +37,6 @@ class Server:
 
         # Map <equipment id> -> <list of sensors>
         self._sensors = {}
-        self._max_num_sensors = 15
 
         self._sock = None
 
@@ -21,37 +44,25 @@ class Server:
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         pass
 
-    def run(self, should_stop=lambda:False):
-        s.bind(("", self._port))
-        s.listen(1)
+    def run(self):
+        self._sock.bind(("", self._port))
+        self._sock.listen(1)
 
-        while not should_stop():
-            client_socket, client_addr = s.accept()
+        try:
+            while True:
+                client_socket, client_addr = self._sock.accept()
 
-            logger.info(f"Received connection from address {client_addr}")
+                logger.info(f"Received connection from address {client_addr}")
+                
+                req = recv_request(self._sock)
+                resp = self._process_request(request)
+                
+                send_str(resp)
 
-            req = self._receive()
-            resp = self._process_request(request)
-            self._respond(resp)
+        except TerminateServer as terminate_exc:
+            logger.info(str(terminate_exc))
 
-        s.close()
-
-    def _receive(self):
-        msg_bytes = self._sock.recv(MAX_MSG_SIZE)
-        msg = msg.decode('ascii')
-        if msg.startswith('add'):
-            return AddRequest.parse(msg)
-        elif msg.startswith('remove'):
-            return RemoveRequest.parse(msg)
-        elif msg.startswith('list'):
-            return ListRequest.parse(msg)
-        elif msg.startswith('read'):
-            return ReadRequest.parse(msg)
-        else:
-            raise ValueError(f"Invalid message {msg}")
-
-    def _respond(self, resp):
-        self._sock.send(resp.encode('ascii'))
+        self._sock.close()
 
     def _process_request(self, req):
         if isinstance(req, AddRequest):
@@ -62,11 +73,15 @@ class Server:
             return self._list_sensors(req)
         elif isinstance(req, ReadRequest):
             return self._read_sensor(req)
+        elif isinstance(req, KillRequest):
+            raise TerminateServer("Received kill request")
+        else:
+            raise ValueError(f"Invalid request type {type(req)} for request {req}")
 
     def _add_sensor(self, req):
         sensor_id = req.sensor_id
         equipment_id = req.equipment_id
-        if self._get_num_sensors() >= self._max_num_sensors:
+        if self._get_num_sensors() >= MAX_NUM_SENSORS:
             return f"limit exceeded"
         elif equipment_id not in self._sensors:
             self._sensors[equipment_id] = [sensor_id]
@@ -78,13 +93,45 @@ class Server:
             return f"sensor {sensor_id} added"
 
     def _remove_sensor(self, req):
-        pass
+        sensor_id = req.sensor_id
+        equipment_id = req.equipment_id
+        if (equipment_id not in self._sensors or
+            sensor_id not in self._sensors[equipment_id]
+        ):
+            return f"sensor {sensor_id} does not exist in {equipment_id}"
+        else:
+            self._sensors[equipment_id].remove(sensor_id)
+            return f"sensor {sensor_id} removed"
 
     def _list_sensors(self, req):
-        pass
+        equipment_id = req.equipment_id
+        if (equipment_id not in self._sensors or
+            len(self._sensors[equipment_id]) == 0
+        ):
+            return "none"
+        else:
+            resp = str(self._sensors[equipment_id][0])
+            for sensor_id in self._sensors[equipment_id][1:]:
+                resp += f" {sensor_id}"
+            return resp
 
     def _read_sensor(self, req):
-        pass
+        sensors_list = req.sensors_list
+        equipment_id = req.equipment_id
+        success_msg = ""
+        failure_msg = ""
+        for sensor_id in sensors_list:
+            if (equipment_id not in self._sensors or 
+                sensor_id not in self._sensors[equipment_id]
+            ):
+                failure_msg += f" {sensor_id}"
+            else:
+                success_msg += f"{sensor_id} "
+        if failure_msg != "":
+            return "sensor(s)" + failure_msg + " not installed"
+        else:
+            # Remove last space
+            return success_msg[:-1]
 
     def _get_num_sensors(self):
         num_sensors = 0

@@ -1,5 +1,6 @@
 import socket
 
+from ...common.contract.comm import send_str
 from ...common.contract.limits import MAX_MSG_SIZE
 
 class Client:
@@ -24,5 +25,5 @@ class Client:
         self._sock.close()
 
     def add_sensor(self, sensor_id, equipment_id):
-        self._sock.send(bytes(f"add sensor {sensor_id} in {equipment_id}"))
+        send_str(self._sock, f"add sensor {sensor_id} in {equipment_id}")
         return self._sock.recv(MAX_MSG_SIZE)

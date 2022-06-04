@@ -23,16 +23,18 @@ class TestClientServer:
         server.init()
         return server
 
+    def stop_server(client):
+        client.kill_server()
+
     def check_resp(self, resp, expected):
         assert resp.decode('ascii') == expected
 
     def test_add_sensor(self, client, server):
-        stop_server = False
-        server_runner = Process(target=server.run, args=(lambda:stop_server,))
+        server_runner = Process(target=server.run)
         server_runner.start()
 
         resp = client.add_sensor(1, 1)
         self.check_resp(resp, f"sensor {sensor_id} added")
 
-        stop_server = True
+        stop_server()
         server_runner.join()
