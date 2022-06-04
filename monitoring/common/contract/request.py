@@ -8,8 +8,8 @@ class AddRequest:
     # add sensor {sensor_id} in {equipment_id}
     def parse(req):
         split_by_space = req.split(" ")
-        sensor_id = int(split_by_space[2])
-        equipment_id = int(split_by_space[4])
+        sensor_id = split_by_space[2]
+        equipment_id = split_by_space[4]
         return AddRequest(sensor_id, equipment_id)
 
 class RemoveRequest:
