@@ -1,3 +1,4 @@
+from copy import copy
 import socket
 
 from ...common.log import log
@@ -9,6 +10,7 @@ from ...common.contract.request import (AddRequest,
                                         ListRequest,
                                         ReadRequest,
                                         KillRequest)
+from ...common.contract.utils import sensors_list_to_string
 
 logger = log.logger()
 
@@ -64,7 +66,7 @@ class Server:
 
     def _process_request(self, req):
         if isinstance(req, AddRequest):
-            return self._add_sensor(req)
+            return self._add_sensors(req)
         elif isinstance(req, RemoveRequest):
             return self._remove_sensor(req)
         elif isinstance(req, ListRequest):
@@ -76,19 +78,29 @@ class Server:
         else:
             raise InvalidMessage(f"Invalid request type {type(req)} for request {req}")
 
-    def _add_sensor(self, req):
-        sensor_id = req.sensor_id
+    def _add_sensors(self, req):
+        sensor_ids = req.sensor_ids
         equipment_id = req.equipment_id
-        if self._get_num_sensors() >= MAX_NUM_SENSORS:
-            return f"limit exceeded"
-        elif equipment_id not in self._sensors:
-            self._sensors[equipment_id] = [sensor_id]
-            return f"sensor {sensor_id} added"
-        elif sensor_id in self._sensors[equipment_id]:
-            return f"sensor {sensor_id} already exists in {equipment_id}"
-        else:
-            self._sensors[equipment_id].append(sensor_id)
-            return f"sensor {sensor_id} added"
+        cur_num_sensors = self._get_num_sensors()
+
+        added = []
+        to_add = copy(sensor_ids)
+        while len(to_add) > 0:
+            if cur_num_sensors + len(added) >= MAX_NUM_SENSORS:
+                return "limit exceeded"
+
+            sensor_id = to_add.pop()
+            if equipment_id not in self._sensors:
+                self._sensors[equipment_id] = [sensor_id]
+                added.append(sensor_id)
+            elif sensor_id not in self._sensors[equipment_id]:
+                self._sensors[equipment_id].append(sensor_id)
+                added.append(sensor_id)
+            else:
+                return f"sensor {sensor_id} already exists in {equipment_id}"
+
+        added_str = sensors_list_to_string(sensor_ids)
+        return f"sensor {added_str} added"
 
     def _remove_sensor(self, req):
         sensor_id = req.sensor_id
@@ -108,8 +120,9 @@ class Server:
         ):
             return "none"
         else:
-            resp = str(self._sensors[equipment_id][0])
-            for sensor_id in self._sensors[equipment_id][1:]:
+            sorted_sensors = sorted(self._sensors[equipment_id])
+            resp = str(sorted_sensors[0])
+            for sensor_id in sorted_sensors[1:]:
                 resp += f" {sensor_id}"
             return resp
 

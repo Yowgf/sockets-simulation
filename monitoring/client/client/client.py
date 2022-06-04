@@ -3,6 +3,7 @@ import socket
 from ...common.log import log
 from ...common.contract.comm import send_str
 from ...common.contract.limits import MAX_MSG_SIZE
+from ...common.contract.utils import sensors_list_to_string
 
 logger = log.logger()
 
@@ -17,9 +18,19 @@ class Client:
         pass
 
     def run(self):
+        # TODO: what does the client.run method have to look like, according to
+        # specs?
+        pass
 
-    def add_sensor(self, sensor_id, equipment_id):
-        return self._send_recv(f"add sensor {sensor_id} in {equipment_id}")
+    def add_sensors(self, sensor_ids, equipment_id):
+        # TODO: remove
+        if not isinstance(sensor_ids, list):
+            raise Exception("panic")
+        sensors_list_str = sensors_list_to_string(sensor_ids)
+        logger.info(f"Sensors list: {sensor_ids}")
+        logger.info(f"Sensors str: {sensors_list_str}")
+        return self._send_recv(f"add sensor {sensors_list_str} in "+
+                               f"{equipment_id}")
 
     def remove_sensor(self, sensor_id, equipment_id):
         return self._send_recv(f"remove sensor {sensor_id} in {equipment_id}")
@@ -40,13 +51,13 @@ class Client:
         self._send("kill")
 
     def _connect(self):
-        logger.info("Connecting client to {self._host}:{self._port}")
+        logger.info(f"Connecting client to {self._host}:{self._port}")
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._sock.setblocking(True)
         self._sock.connect((self._host, self._port))
 
     def _close(self):
-        logger.info("Closing connection to {self._host}:{self._port}")
+        logger.info(f"Closing connection to {self._host}:{self._port}")
         self._sock.close()
 
     def _send(self, msg):

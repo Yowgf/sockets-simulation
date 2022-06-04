@@ -1,16 +1,16 @@
 from .errors import InvalidMessage
 
 class AddRequest:
-    def __init__(self, sensor_id, equipment_id):
-        self.sensor_id = sensor_id
+    def __init__(self, sensor_ids, equipment_id):
+        self.sensor_ids = sensor_ids
         self.equipment_id = equipment_id
 
     # add sensor {sensor_id} in {equipment_id}
     def parse(req):
         split_by_space = req.split(" ")
-        sensor_id = split_by_space[2]
-        equipment_id = split_by_space[4]
-        return AddRequest(sensor_id, equipment_id)
+        sensor_ids = split_by_space[2:-2]
+        equipment_id = split_by_space[-1]
+        return AddRequest(sensor_ids, equipment_id)
 
 class RemoveRequest:
     def __init__(self, sensor_id, equipment_id):
