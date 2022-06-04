@@ -116,9 +116,9 @@ class TestClientServer:
         self.wait_server_wakeup()
 
         resp = client.add_sensors(SENSOR_IDS[:1], EQUIPMENT_IDS[0])
-        self.check_resp(resp, f"sensor 01 added")
+        self.check_resp(resp, f"sensor {SENSOR_IDS[0]} added")
         resp = client.list_sensors(EQUIPMENT_IDS[0])
-        self.check_resp(resp, "01")
+        self.check_resp(resp, f"{SENSOR_IDS[0]}")
 
         self.stop_server(client)
         server_runner.join()
@@ -132,6 +132,7 @@ class TestClientServer:
         expect_added_str = sensors_list_to_string(SENSOR_IDS)
         self.check_resp(resp, f"sensor {expect_added_str} added")
         resp = client.list_sensors(EQUIPMENT_IDS[0])
+        # TODO: expected_str
         self.check_resp(resp, "01 02 03 04")
 
         self.stop_server(client)
@@ -207,4 +208,21 @@ class TestClientServer:
         self.check_resp(resp, "invalid sensor")
 
         self.stop_server(client)
+        server_runner.join()
+
+    def test_ipv6_works(self, client_ipv6, server_ipv6):
+        server_runner = threading.Thread(target=server_ipv6.run)
+        server_runner.start()
+        self.wait_server_wakeup()
+
+        resp = client_ipv6.add_sensors(SENSOR_IDS[:1], EQUIPMENT_IDS[0])
+        self.check_resp(resp, f"sensor {SENSOR_IDS[0]} added")
+        resp = client_ipv6.list_sensors(EQUIPMENT_IDS[0])
+        self.check_resp(resp, f"{SENSOR_IDS[0]}")
+        resp = client_ipv6.read_sensors(SENSOR_IDS[:1], EQUIPMENT_IDS[0])
+        self.check_resp(resp, f"{SENSOR_IDS[0]}")
+        resp = client_ipv6.remove_sensor(SENSOR_IDS[0], EQUIPMENT_IDS[0])
+        self.check_resp(resp, f"sensor {SENSOR_IDS[0]} removed")
+
+        self.stop_server(client_ipv6)
         server_runner.join()

@@ -4,6 +4,8 @@ from ...common.log import log
 from ...common.contract.comm import send_str
 from ...common.contract.limits import MAX_MSG_SIZE
 from ...common.contract.utils import sensors_list_to_string
+from ...common.utils.utils import parse_address_type
+from ...common.utils.utils import new_socket
 
 logger = log.logger()
 
@@ -18,17 +20,11 @@ class Client:
         pass
 
     def run(self):
-        # TODO: what does the client.run method have to look like, according to
-        # specs?
+        # TODO: read entries from stdin, send to server, and print responses.
         pass
 
     def add_sensors(self, sensor_ids, equipment_id):
-        # TODO: remove
-        if not isinstance(sensor_ids, list):
-            raise Exception("panic")
         sensors_list_str = sensors_list_to_string(sensor_ids)
-        logger.info(f"Sensors list: {sensor_ids}")
-        logger.info(f"Sensors str: {sensors_list_str}")
         return self._send_recv(f"add sensor {sensors_list_str} in "+
                                f"{equipment_id}")
 
@@ -52,8 +48,8 @@ class Client:
 
     def _connect(self):
         logger.info(f"Connecting client to {self._host}:{self._port}")
-        self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._sock.setblocking(True)
+        address_type = parse_address_type(self._host)
+        self._sock = new_socket(address_type)
         self._sock.connect((self._host, self._port))
 
     def _close(self):

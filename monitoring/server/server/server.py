@@ -1,6 +1,7 @@
 from copy import copy
 import socket
 
+from .errors import TerminateServer
 from ...common.log import log
 from ...common.contract.errors import (InvalidMessageError,
                                        InvalidSensorError,
@@ -13,20 +14,16 @@ from ...common.contract.request import (AddRequest,
                                         ReadRequest,
                                         KillRequest)
 from ...common.contract.utils import sensors_list_to_string
+from ...common.utils.utils import new_socket
 
 logger = log.logger()
 
 # TODO cases:
 #
-# - add invalid sensor (only allow 1-4)
-# - add invalid equipment (only allow 1-4)
-#
 # - Allow IPv4 and IPv6
+# 
+# - Fix the 'read' API
 ################################################################################
-
-class TerminateServer(Exception):
-    def __init__(self, reason):
-        super().__init__("Terminating server due to reason: " + reason)
 
 class Server:
     def __init__(self, config):
@@ -36,13 +33,11 @@ class Server:
         # Map <equipment id> -> <list of sensors>
         self._sensors = {}
 
-        self._sock = None
-
     def init(self):
-        self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._sock.setblocking(True)
+        self._sock = new_socket(self._ipver)
 
     def run(self):
+        # bind "" == bind INADDR_ANY
         self._sock.bind(("", self._port))
         self._sock.listen(1)
 
@@ -66,8 +61,8 @@ class Server:
 
         except TerminateServer as terminate_exc:
             logger.info(str(terminate_exc))
-
-        self._sock.close()
+        finally:
+            self._sock.close()
 
     def _process_request(self, req):
         if isinstance(req, AddRequest):
