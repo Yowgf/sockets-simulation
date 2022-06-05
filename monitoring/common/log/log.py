@@ -9,7 +9,7 @@ ALL_LOGGING_LEVELS = {
     "ERROR": logging.ERROR,
     "CRITICAL": logging.CRITICAL,
 }
-LOGGING_LEVEL = logging.INFO
+LOGGING_LEVEL = logging.CRITICAL
 
 all_loggers_map = {}
 

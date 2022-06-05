@@ -8,7 +8,7 @@ from common.contract.errors import (InvalidMessageError,
                                        InvalidSensorError,
                                        InvalidEquipmentError)
 from common.contract.limits import MAX_NUM_SENSORS
-from common.contract.comm import send_str, recv_request
+from common.contract.comm import recv_request, send_str
 from common.contract.request import (AddRequest,
                                         RemoveRequest,
                                         ListRequest,
@@ -41,7 +41,7 @@ class Server:
                 logger.info(f"Received connection from address {client_addr}")
 
                 try:
-                    req = recv_request(client_socket)
+                    req = recv_request(client_socket, print_incoming=True)
                     resp = self._process_request(req)
                     send_str(client_socket, resp)
                 except InvalidMessageError as e:

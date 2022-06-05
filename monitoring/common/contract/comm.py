@@ -23,8 +23,7 @@ def decode_msg(msg_bytes):
 def encode_request(msg_str):
     return encode_msg(msg_str)
 
-def decode_request(msg_bytes):
-    msg = decode_msg(msg_bytes)
+def decode_request(msg):
     if msg.startswith('add '):
         return AddRequest.parse(msg)
     elif msg.startswith('remove '):
@@ -42,7 +41,10 @@ def send_str(sock, msg_str):
     encoded_msg = encode_msg(msg_str)
     sock.send(encoded_msg)
 
-def recv_request(sock):
+def recv_request(sock, print_incoming=False):
     msg_bytes = sock.recv(MAX_MSG_SIZE)
-    decoded_msg = decode_request(msg_bytes)
-    return decoded_msg
+    msg = decode_msg(msg_bytes)
+    if print_incoming:
+        print(msg)
+    decoded_request = decode_request(msg)
+    return decoded_request
