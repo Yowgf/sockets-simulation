@@ -3,26 +3,21 @@ import socket
 
 from .errors import TerminateServer
 from .sensor import Sensor
-from ...common.log import log
-from ...common.contract.errors import (InvalidMessageError,
+from common.log import log
+from common.contract.errors import (InvalidMessageError,
                                        InvalidSensorError,
                                        InvalidEquipmentError)
-from ...common.contract.limits import MAX_NUM_SENSORS
-from ...common.contract.comm import send_str, recv_request
-from ...common.contract.request import (AddRequest,
+from common.contract.limits import MAX_NUM_SENSORS
+from common.contract.comm import send_str, recv_request
+from common.contract.request import (AddRequest,
                                         RemoveRequest,
                                         ListRequest,
                                         ReadRequest,
                                         KillRequest)
-from ...common.contract.utils import sensors_list_to_string
-from ...common.utils.utils import new_socket
+from common.contract.utils import sensors_list_to_string
+from common.utils.utils import new_socket
 
 logger = log.logger()
-
-# TODO cases:
-# 
-# - Fix the 'read' API
-################################################################################
 
 class Server:
     def __init__(self, config):
@@ -88,7 +83,7 @@ class Server:
             if cur_num_sensors + len(added) >= MAX_NUM_SENSORS:
                 return "limit exceeded"
 
-            sensor_id = to_add.pop()
+            sensor_id = to_add.pop(0)
             if self._is_sensor_placed(equipment_id, sensor_id):
                 return f"sensor {sensor_id} already exists in {equipment_id}"
 
@@ -114,10 +109,10 @@ class Server:
         ):
             return "none"
         else:
-            sorted_sensor_ids = sorted([sensor.id for sensor in
-                                        self._sensors[equipment_id]])
-            resp = str(sorted_sensor_ids[0])
-            for sensor_id in sorted_sensor_ids[1:]:
+            sensor_ids = [sensor.id for sensor in
+                          self._sensors[equipment_id]]
+            resp = str(sensor_ids[0])
+            for sensor_id in sensor_ids[1:]:
                 resp += f" {sensor_id}"
             return resp
 

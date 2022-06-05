@@ -1,11 +1,12 @@
 import socket
 
-from ...common.log import log
-from ...common.contract.comm import send_str
-from ...common.contract.limits import MAX_MSG_SIZE
-from ...common.contract.utils import sensors_list_to_string
-from ...common.utils.utils import parse_address_type
-from ...common.utils.utils import new_socket
+from common.log import log
+from common.contract.comm import send_str
+from common.contract.comm import decode_msg
+from common.contract.limits import MAX_MSG_SIZE
+from common.contract.utils import sensors_list_to_string
+from common.utils.utils import parse_address_type
+from common.utils.utils import new_socket
 
 logger = log.logger()
 
@@ -20,8 +21,15 @@ class Client:
         pass
 
     def run(self):
-        # TODO: read entries from stdin, send to server, and print responses.
-        pass
+        entry = ""
+        stop_keyword = "quit"
+        while True:
+            entry = input()
+            if entry == stop_keyword:
+                logger.info("Received stop keyword {stop_keyword}. Halting.")
+                break
+            resp = self._send_recv(entry)
+            print(decode_msg(resp))
 
     def add_sensors(self, sensor_ids, equipment_id):
         sensors_list_str = sensors_list_to_string(sensor_ids)

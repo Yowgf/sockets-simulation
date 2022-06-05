@@ -142,8 +142,7 @@ class TestClientServer:
         expect_added_str = sensors_list_to_string(SENSOR_IDS)
         self.check_resp(resp, f"sensor {expect_added_str} added")
         resp = client.list_sensors(EQUIPMENT_IDS[0])
-        # TODO: expected_str
-        self.check_resp(resp, "01 02 03 04")
+        self.check_resp(resp, expect_added_str)
 
         self.stop_server(client)
         server_runner.join()
