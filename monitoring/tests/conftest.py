@@ -4,7 +4,7 @@ from ..client.client.client import Client
 from ..server.server.server import Server
 from .mocks import ClientConfig, ServerConfig
 
-PORT = 60008
+PORT = 50131
 
 @pytest.fixture
 def client():

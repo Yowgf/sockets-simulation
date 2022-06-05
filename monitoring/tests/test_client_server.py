@@ -6,6 +6,7 @@ from ..common.contract.limits import MAX_NUM_SENSORS
 from ..common.contract.limits import EQUIPMENT_IDS
 from ..common.contract.limits import SENSOR_IDS
 from ..common.contract.utils import sensors_list_to_string
+from ..server.server.sensor import Sensor
 
 class TestClientServer:
     def stop_server(self, client):
@@ -15,6 +16,15 @@ class TestClientServer:
         decoded_resp = decode_msg(resp)
         assert decoded_resp == expected, (f"Expected '{expected}' "+
                                           f"got '{decoded_resp}'")
+
+    def check_sensor_values(self, sensor_values):
+        for sensor_value in sensor_values:
+            assert Sensor.is_valid_value(sensor_value), sensor_value
+
+    def check_read_resp(self, read_resp, expected_num_values):
+        sensor_values = [float(val) for val in decode_msg(read_resp).split(" ")]
+        assert len(sensor_values) == expected_num_values
+        self.check_sensor_values(sensor_values)
 
     def wait_server_wakeup(self):
         time.sleep(0.01)
@@ -157,7 +167,7 @@ class TestClientServer:
 
         client.add_sensors(SENSOR_IDS[:1], EQUIPMENT_IDS[0])
         resp = client.read_sensors(SENSOR_IDS[:1], EQUIPMENT_IDS[0])
-        self.check_resp(resp, f"{SENSOR_IDS[0]}")
+        self.check_read_resp(resp, 1)
 
         self.stop_server(client)
         server_runner.join()
@@ -169,8 +179,7 @@ class TestClientServer:
 
         client.add_sensors(SENSOR_IDS, EQUIPMENT_IDS[0])
         resp = client.read_sensors(SENSOR_IDS, EQUIPMENT_IDS[0])
-        expected_resp = sensors_list_to_string(SENSOR_IDS)
-        self.check_resp(resp, expected_resp)
+        self.check_read_resp(resp, len(SENSOR_IDS))
 
         self.stop_server(client)
         server_runner.join()
@@ -220,7 +229,7 @@ class TestClientServer:
         resp = client_ipv6.list_sensors(EQUIPMENT_IDS[0])
         self.check_resp(resp, f"{SENSOR_IDS[0]}")
         resp = client_ipv6.read_sensors(SENSOR_IDS[:1], EQUIPMENT_IDS[0])
-        self.check_resp(resp, f"{SENSOR_IDS[0]}")
+        self.check_read_resp(resp, 1)
         resp = client_ipv6.remove_sensor(SENSOR_IDS[0], EQUIPMENT_IDS[0])
         self.check_resp(resp, f"sensor {SENSOR_IDS[0]} removed")
 

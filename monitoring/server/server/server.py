@@ -2,6 +2,7 @@ from copy import copy
 import socket
 
 from .errors import TerminateServer
+from .sensor import Sensor
 from ...common.log import log
 from ...common.contract.errors import (InvalidMessageError,
                                        InvalidSensorError,
@@ -19,8 +20,6 @@ from ...common.utils.utils import new_socket
 logger = log.logger()
 
 # TODO cases:
-#
-# - Allow IPv4 and IPv6
 # 
 # - Fix the 'read' API
 ################################################################################
@@ -90,14 +89,11 @@ class Server:
                 return "limit exceeded"
 
             sensor_id = to_add.pop()
-            if equipment_id not in self._sensors:
-                self._sensors[equipment_id] = [sensor_id]
-                added.append(sensor_id)
-            elif sensor_id not in self._sensors[equipment_id]:
-                self._sensors[equipment_id].append(sensor_id)
-                added.append(sensor_id)
-            else:
+            if self._is_sensor_placed(equipment_id, sensor_id):
                 return f"sensor {sensor_id} already exists in {equipment_id}"
+
+            self._insert_sensor(equipment_id, sensor_id)
+            added.append(sensor_id)
 
         added_str = sensors_list_to_string(sensor_ids)
         return f"sensor {added_str} added"
@@ -105,12 +101,10 @@ class Server:
     def _remove_sensor(self, req):
         sensor_id = req.sensor_id
         equipment_id = req.equipment_id
-        if (equipment_id not in self._sensors or
-            sensor_id not in self._sensors[equipment_id]
-        ):
+        if not self._is_sensor_placed(equipment_id, sensor_id):
             return f"sensor {sensor_id} does not exist in {equipment_id}"
         else:
-            self._sensors[equipment_id].remove(sensor_id)
+            self.__remove_sensor(equipment_id, sensor_id)
             return f"sensor {sensor_id} removed"
 
     def _list_sensors(self, req):
@@ -120,29 +114,52 @@ class Server:
         ):
             return "none"
         else:
-            sorted_sensors = sorted(self._sensors[equipment_id])
-            resp = str(sorted_sensors[0])
-            for sensor_id in sorted_sensors[1:]:
+            sorted_sensor_ids = sorted([sensor.id for sensor in
+                                        self._sensors[equipment_id]])
+            resp = str(sorted_sensor_ids[0])
+            for sensor_id in sorted_sensor_ids[1:]:
                 resp += f" {sensor_id}"
             return resp
 
     def _read_sensors(self, req):
-        sensors_list = req.sensors_list
+        sensor_ids = req.sensors_list
         equipment_id = req.equipment_id
         success_msg = ""
         failure_msg = ""
-        for sensor_id in sorted(sensors_list):
-            if (equipment_id not in self._sensors or 
-                sensor_id not in self._sensors[equipment_id]
-            ):
+        sensors = None
+        for sensor_id in sensor_ids:
+            if not self._is_sensor_placed(equipment_id, sensor_id):
                 failure_msg += f" {sensor_id}"
             else:
-                success_msg += f"{sensor_id} "
+                if sensors == None:
+                    sensors = self._sensors[equipment_id]
+                for sensor in sensors:
+                    if sensor.id == sensor_id:
+                        break
+                success_msg += f"{sensor.val:.2f} "
         if failure_msg != "":
             return "sensor(s)" + failure_msg + " not installed"
         else:
-            # Remove trailing space
             return success_msg.rstrip()
+
+    def _is_sensor_placed(self, equipment_id, sensor_id):
+        if not equipment_id in self._sensors:
+            return False
+        sensor_ids = [sensor.id for sensor in self._sensors[equipment_id]]
+        return sensor_id in sensor_ids
+
+    def _insert_sensor(self, equipment_id, sensor_id):
+        if equipment_id not in self._sensors:
+            self._sensors[equipment_id] = []
+        self._sensors[equipment_id].append(Sensor.new_randval(sensor_id))
+
+    def __remove_sensor(self, equipment_id, sensor_id):
+        if equipment_id not in self._sensors:
+            raise ValueError(f"Attempt to remove sensor for equipment "+
+                             f"{equipment_id} which does not exist")
+        sensor_idx = ([sensor.id for sensor in self._sensors[equipment_id]].
+                      index(sensor_id))
+        self._sensors[equipment_id].pop(sensor_idx)
 
     def _get_num_sensors(self):
         num_sensors = 0
