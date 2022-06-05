@@ -28,8 +28,11 @@ class Client:
             if entry == stop_keyword:
                 logger.info("Received stop keyword {stop_keyword}. Halting.")
                 break
-            resp = self._send_recv(entry)
-            print(decode_msg(resp))
+            if entry == 'kill':
+                self._send(entry)
+            else:
+                resp = self._send_recv(entry)
+                print(decode_msg(resp))
 
     def add_sensors(self, sensor_ids, equipment_id):
         sensors_list_str = sensors_list_to_string(sensor_ids)

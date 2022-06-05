@@ -11,9 +11,14 @@ add sensor 01 03 in 02
 add sensor 01 in 02
 add sensor 02 in 02
 list sensors in 02
+remove sensor 01 in 02
+remove sensor 01 in 02
+list sensors in 02
 add sensor 03 in 01
 add sensor 01 in 01
 list sensors in 01
+read 01 03 in 01
+read 01 in 01
 read 01 04 in 01
 kill
 quit
